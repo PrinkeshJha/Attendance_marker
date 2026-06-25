@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Manager - Fast Offline Roll Number Tracker</title>
+  <meta name="description" content="A premium, fast, and responsive offline web application to track, manage, and export student attendance sheets. Supports dynamic grid, quick-marking ranges, search, and CSV export." />
+  <meta name="keywords" content="attendance tracker, attendance sheets, roll number manager, classroom assistant, offline attendance" />
+  <meta name="author" content="Antigravity Team" />
+  <meta name="theme-color" content="#4f46e5" />
+  
+  <!-- Open Graph Meta -->
+  <meta property="og:title" content="Attendance Manager - Fast Offline Roll Number Tracker" />
+  <meta property="og:description" content="A premium offline web application to track, manage, and export student attendance sheets with ease." />
+  <meta property="og:type" content="website" />
+  
+  <!-- Google Fonts (Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Reset & Core Variables ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: hsl(220, 25%, 97%);
+      --surface: hsl(0, 0%, 100%);
+      --border: hsl(220, 13%, 90%);
+      --text: hsl(224, 71%, 4%);
+      --text-muted: hsl(220, 9%, 46%);
+      --accent: hsl(243, 75%, 59%);
+      --accent-hover: hsl(243, 75%, 52%);
+      --accent-light: hsl(243, 75%, 96%);
+      
+      --present: hsl(142, 71%, 45%);
+      --present-bg: hsl(142, 71%, 95%);
+      --present-border: hsl(142, 71%, 85%);
+      
+      --absent-text: hsl(350, 89%, 60%);
+      --absent-bg: hsl(350, 89%, 96%);
+      --absent-border: hsl(350, 89%, 90%);
+      
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03), 0 10px 30px -10px rgba(99, 102, 241, 0.05);
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg: hsl(222, 47%, 7%);
+      --surface: hsl(223, 47%, 11%);
+      --border: hsl(223, 27%, 18%);
+      --text: hsl(210, 40%, 98%);
+      --text-muted: hsl(215, 20%, 65%);
+      --accent: hsl(244, 96%, 68%);
+      --accent-hover: hsl(244, 96%, 74%);
+      --accent-light: hsl(244, 96%, 15%);
+      
+      --present: hsl(142, 76%, 36%);
+      --present-bg: hsl(142, 76%, 10%);
+      --present-border: hsl(142, 76%, 18%);
+      
+      --absent-text: hsl(350, 89%, 60%);
+      --absent-bg: hsl(350, 89%, 10%);
+      --absent-border: hsl(350, 89%, 18%);
+      
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 10px 35px -10px rgba(0, 0, 0, 0.4);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--accent) 0%, hsl(243, 75%, 68%) 100%);
+      color: #ffffff;
+      border-radius: var(--radius-sm);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .dark-toggle {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      transition: var(--transition);
+    }
+    .dark-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    /* ── Dashboard Layout ── */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    @media (min-width: 768px) {
+      .dashboard {
+        grid-template-columns: 340px 1fr;
+        align-items: start;
+      }
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #grid-meta {
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 0.78rem;
+    }
+
+    /* ── Forms & Inputs ── */
+    .range-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    input[type="number"], input[type="text"], textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      color: var(--text);
+      outline: none;
+      transition: var(--transition);
+      width: 100%;
+      font-family: inherit;
+    }
+    input[type="number"]:focus, input[type="text"]:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .setup-btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .setup-btn-group .btn-primary {
+      flex: 1;
+    }
+
+    .reset-btn {
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1;
+    }
+
+    /* ── Quick Mark Area ── */
+    .quickmark-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .quickmark-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: -4px;
+      margin-bottom: 2px;
+    }
+
+    .quickmark-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .quickmark-buttons .btn {
+      flex: 1;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-ghost {
+      background: var(--bg);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-ghost:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .btn-success {
+      background: var(--present);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+    .btn-success:hover {
+      filter: brightness(1.05);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-danger {
+      background: var(--absent-bg);
+      color: var(--absent-text);
+      border-color: var(--absent-border);
+    }
+    .btn-danger:hover {
+      background: var(--absent-text);
+      color: #ffffff;
+      border-color: transparent;
+      transform: translateY(-1px);
+    }
+
+    .btn-danger-ghost {
+      background: var(--bg);
+      color: var(--absent-text);
+      border-color: var(--border);
+    }
+    .btn-danger-ghost:hover {
+      border-color: var(--absent-text);
+      background: var(--absent-bg);
+    }
+
+    /* ── Search Box ── */
+    .search-box {
+      position: relative;
+      width: 100%;
+    }
+    .search-box input {
+      padding-left: 44px;
+      height: 48px;
+      font-size: 1rem;
+      border-radius: var(--radius-md);
+    }
+    .search-icon {
+      position: absolute;
+      left: 16px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    /* ── Live Stats & Progress ── */
+    .progress-container {
+      margin-bottom: 20px;
+    }
+    .progress-text-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .attendance-percentage {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .attendance-status {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      transition: var(--transition);
+    }
+    .status-perfect { background: var(--present-bg); color: var(--present); }
+    .status-good { background: var(--present-bg); color: var(--present); }
+    .status-average { background: hsl(45, 93%, 90%); color: hsl(45, 93%, 30%); }
+    [data-theme="dark"] .status-average { background: hsl(45, 93%, 15%); color: hsl(45, 93%, 70%); }
+    .status-low { background: var(--absent-bg); color: var(--absent-text); }
+    .status-muted { background: var(--border); color: var(--text-muted); }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--present) 100%);
+      border-radius: 4px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+    }
+
+    .stat {
+      flex: 1;
+      background: var(--bg);
+      border-radius: var(--radius-sm);
+      padding: 12px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    .stat.present .stat-value { color: var(--present); }
+    .stat.absent .stat-value { color: var(--absent-text); }
+    .stat.total .stat-value { color: var(--accent); }
+
+    /* ── Roll Grid ── */
+    #roll-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: 8px;
+    }
+
+    .roll-btn {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .roll-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+    }
+
+    .roll-btn.present {
+      background: linear-gradient(135deg, var(--present) 0%, hsl(142, 76%, 40%) 100%);
+      border-color: transparent;
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.22);
+    }
+    .roll-btn.present:hover {
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.32);
+      filter: brightness(1.05);
+    }
+
+    @keyframes bounce-scale {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); box-shadow: 0 0 0 4px var(--accent); }
+      100% { transform: scale(1.05); box-shadow: 0 0 0 3px var(--accent); }
+    }
+    .roll-btn.search-match {
+      animation: bounce-scale 0.3s forwards ease-out;
+      border-color: var(--accent);
+      color: var(--accent);
+      z-index: 2;
+    }
+
+    /* ── Action Grid ── */
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .actions #btn-clear-all {
+      grid-column: span 2;
+    }
+
+    /* ── Summary Blocks ── */
+    .summary-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .summary-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    .summary-block .label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .summary-block.present-block .label { color: var(--present); }
+    .summary-block.absent-block .label { color: var(--absent-text); }
+
+    .summary-block .rolls {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+      word-break: break-all;
+      max-height: 120px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .summary-block .rolls::-webkit-scrollbar {
+      width: 4px;
+    }
+    .summary-block .rolls::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .summary-block .rolls::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    /* ── Empty State ── */
+    .empty {
+      text-align: center;
+      padding: 60px 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      color: var(--text-muted);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 16px; }
+    .empty p { font-size: 0.95rem; max-width: 280px; line-height: 1.5; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
+    .toast-undo-btn {
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 700;
+      transition: var(--transition);
+    }
+    .toast-undo-btn:hover {
+      background: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    /* ── Custom Modal Overlay ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 17, 23, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-width: 400px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      animation: modalEnter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes modalEnter {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .modal-body {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* ── Footer ── */
+    .app-footer {
+      margin-top: 40px;
+      text-align: center;
+      padding: 24px 0 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Micro-Animations ── */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header class="navbar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+      </div>
+      <h1>Attend<span>ance</span></h1>
+    </div>
+    <button class="dark-toggle" id="themeBtn" onclick="toggleTheme()" aria-label="Toggle visual theme">🌙 Dark</button>
+  </header>
+
+  <!-- Dashboard Container -->
+  <main class="dashboard">
+    <!-- Left column: Control Panel -->
+    <aside class="sidebar">
+      <!-- Range Setup Card -->
+      <section class="card" aria-labelledby="range-title">
+        <h2 class="card-title" id="range-title">Roll Number Range</h2>
+        <div class="range-form">
+          <div class="field">
+            <label for="startRoll">Start Roll</label>
+            <input type="number" id="startRoll" value="1" min="1" aria-required="true" />
+          </div>
+          <div class="field">
+            <label for="endRoll">End Roll</label>
+            <input type="number" id="endRoll" value="70" min="1" aria-required="true" />
+          </div>
+          <div class="setup-btn-group">
+            <button class="btn btn-primary" onclick="generateRolls()" id="btn-generate">
+              <span>Generate Grid</span>
+            </button>
+            <button class="btn btn-ghost reset-btn" onclick="resetSession()" id="btn-reset" title="Reset Session" aria-label="Reset entire session">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <polyline points="3 3 3 8 8 8"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Stats Card -->
+      <section class="card" id="stats-card" style="display:none" aria-labelledby="stats-title">
+        <h2 class="card-title" id="stats-title">Live Stats & Progress</h2>
+        <div class="progress-container">
+          <div class="progress-text-row">
+            <span class="attendance-percentage" id="attendanceRate">0% Present</span>
+            <span class="attendance-status status-muted" id="attendanceStatus">No data</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat present">
+            <div class="stat-value" id="countPresent">0</div>
+            <div class="stat-label">Present</div>
+          </div>
+          <div class="stat absent">
+            <div class="stat-value" id="countAbsent">0</div>
+            <div class="stat-label">Absent</div>
+          </div>
+          <div class="stat total">
+            <div class="stat-value" id="countTotal">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Mark Card -->
+      <section class="card" id="quickmark-card" style="display:none" aria-labelledby="quickmark-title">
+        <h2 class="card-title" id="quickmark-title">Quick Mark</h2>
+        <div class="quickmark-form">
+          <textarea id="quickMarkInput" rows="2" placeholder="e.g. 1-5, 8, 12-15" aria-label="Quick mark entry string" aria-describedby="quickmark-desc"></textarea>
+          <div class="quickmark-desc" id="quickmark-desc">Enter ranges/lists to mark in bulk.</div>
+          <div class="quickmark-buttons">
+            <button class="btn btn-success" onclick="quickMark(true)" id="btn-quick-present">Present</button>
+            <button class="btn btn-danger-ghost" onclick="quickMark(false)" id="btn-quick-absent">Absent</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Actions Card -->
+      <section class="card" id="actions-card" style="display:none" aria-labelledby="actions-title">
+        <h2 class="card-title" id="actions-title">Bulk Actions</h2>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="selectAll()" id="btn-select-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Select All
+          </button>
+          <button class="btn btn-ghost" onclick="invertSelection()" id="btn-invert">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Invert
+          </button>
+          <button class="btn btn-ghost" onclick="exportCSV()" id="btn-export">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+            </svg>
+            Export CSV
+          </button>
+          <button class="btn btn-ghost" onclick="copySummary()" id="btn-copy">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy Text
+          </button>
+          <button class="btn btn-danger" onclick="clearAll()" id="btn-clear-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Clear Sheet
+          </button>
+        </div>
+      </section>
+
+      <!-- Summary Card -->
+      <section class="card" id="summary-card" style="display:none" aria-labelledby="summary-title">
+        <h2 class="card-title" id="summary-title">Summary</h2>
+        <div class="summary-row">
+          <div class="summary-block present-block">
+            <div class="label">Present (<span id="summPresent">0</span>)</div>
+            <div class="rolls" id="summPresentRolls">—</div>
+          </div>
+          <div class="summary-block absent-block">
+            <div class="label">Absent (<span id="summAbsent">0</span>)</div>
+            <div class="rolls" id="summAbsentRolls">—</div>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Right column: Main Roll Grid & Search -->
+    <div class="grid-content">
+      <!-- Search Card -->
+      <section class="card" id="search-card" style="display:none" aria-label="Search roll numbers">
+        <div class="search-box">
+          <span class="search-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input type="text" id="searchInput" placeholder="Search roll number…" oninput="searchRoll()" aria-label="Search roll numbers" />
+        </div>
+      </section>
+
+      <!-- Roll Grid Card -->
+      <section class="card" id="grid-card" style="display:none" aria-labelledby="grid-title">
+        <h2 class="card-title" id="grid-title">Roll Numbers <span id="grid-meta"></span></h2>
+        <div id="roll-grid"></div>
+      </section>
+
+      <!-- Empty state (initial) -->
+      <section class="empty" id="empty-state" aria-label="Setup instruction guide">
+        <div class="empty-icon">📝</div>
+        <p>Set a roll number range and click <strong>Generate Grid</strong> to begin taking attendance.</p>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <p>Attendance Manager — Fast offline attendance tracker. All data stays on your device.</p>
+  </footer>
+</div>
+
+<!-- Custom Confirmation Modal -->
+<div id="confirmModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-card">
+    <h3 class="modal-title" id="modal-title">Reset Session?</h3>
+    <p class="modal-body">This will permanently delete all generated roll numbers and active attendance data. This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmResetSession()">Yes, Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Alert -->
+<div id="toast" role="alert"></div>
+
+<script>
+  /* ─── State ─── */
+  let rolls = [];
+  let selected = new Set();
+  let lastSelectedState = null;
+  let confirmCallback = null;
+
+  /* ─── Theme ─── */
+  const html = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  let dark = false;
+
+  function toggleTheme() {
+    dark = !dark;
+    html.setAttribute('data-theme', dark ? 'dark' : '');
+    themeBtn.textContent = dark ? '☀️ Light' : '🌙 Dark';
+    localStorage.setItem('attendance_dark', dark);
+  }
+
+  /* ─── Custom Dialog Modal ─── */
+  function showConfirmModal(callback) {
+    confirmCallback = callback;
+    document.getElementById('confirmModal').style.display = 'flex';
+  }
+
+  function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    confirmCallback = null;
+  }
+
+  function confirmResetSession() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  }
+
+  /* ─── Range Grid Generation ─── */
+  function generateRolls() {
+    const startInput = document.getElementById('startRoll');
+    const endInput = document.getElementById('endRoll');
+    const start = parseInt(startInput.value);
+    const end   = parseInt(endInput.value);
+
+    if (isNaN(start) || isNaN(end) || start < 1 || end < 1) {
+      toast('⚠️ Please enter positive integers.');
+      return;
+    }
+    if (start > end) {
+      toast('⚠️ Start roll cannot exceed End roll.');
+      return;
+    }
+    if (end - start + 1 > 1000) {
+      toast('⚠️ Limit: Maximum of 1,000 rolls allowed.');
+      return;
+    }
+
+    rolls = [];
+    selected.clear();
+    lastSelectedState = null;
+    
+    for (let i = start; i <= end; i++) rolls.push(i);
+
+    renderGrid();
+    updateStats();
+    showPanels();
+    document.getElementById('grid-meta').textContent = `(${start} – ${end})`;
+    document.getElementById('empty-state').style.display = 'none';
+    
+    saveSession();
+    toast(`Generated ${rolls.length} roll numbers.`);
+  }
+
+  /* ─── Render Roll Button Grid ─── */
+  function renderGrid() {
+    const grid = document.getElementById('roll-grid');
+    grid.innerHTML = '';
+
+    rolls.forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'roll-btn' + (selected.has(r) ? ' present' : '');
+      btn.textContent = r;
+      btn.dataset.roll = r;
+      btn.id = `r-${r}`;
+      btn.onclick = () => toggleRoll(r);
+      grid.appendChild(btn);
+    });
+  }
+
+  /* ─── Toggle Individual Roll ─── */
+  function toggleRoll(r) {
+    const btn = document.getElementById(`r-${r}`);
+    if (selected.has(r)) {
+      selected.delete(r);
+      if (btn) btn.classList.remove('present');
+    } else {
+      selected.add(r);
+      if (btn) btn.classList.add('present');
+    }
+    updateStats();
+    saveSession();
+  }
+
+  /* ─── Update Live Statistics & Summary ─── */
+  function updateStats() {
+    const present = selected.size;
+    const total   = rolls.length;
+    const absent  = total - present;
+    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
+    document.getElementById('countPresent').textContent = present;
+    document.getElementById('countAbsent').textContent  = absent;
+    document.getElementById('countTotal').textContent   = total;
+
+    // Update Progress Track Bar
+    const barFill = document.getElementById('progressBarFill');
+    if (barFill) barFill.style.width = `${rate}%`;
+    
+    const rateEl = document.getElementById('attendanceRate');
+    if (rateEl) rateEl.textContent = `${rate}% Present`;
+
+    const statusEl = document.getElementById('attendanceStatus');
+    if (statusEl) {
+      if (total === 0) {
+        statusEl.textContent = 'No rolls';
+        statusEl.className = 'attendance-status status-muted';
+      } else if (rate === 100) {
+        statusEl.textContent = 'Perfect!';
+        statusEl.className = 'attendance-status status-perfect';
+      } else if (rate >= 75) {
+        statusEl.textContent = 'Good';
+        statusEl.className = 'attendance-status status-good';
+      } else if (rate >= 50) {
+        statusEl.textContent = 'Average';
+        statusEl.className = 'attendance-status status-average';
+      } else {
+        statusEl.textContent = 'Low';
+        statusEl.className = 'attendance-status status-low';
+      }
+    }
+
+    // Update Summary Lists
+    const presentRolls = rolls.filter(r => selected.has(r));
+    const absentRolls  = rolls.filter(r => !selected.has(r));
+
+    document.getElementById('summPresent').textContent     = present;
+    document.getElementById('summAbsent').textContent      = absent;
+    document.getElementById('summPresentRolls').textContent = presentRolls.length ? presentRolls.join(', ') : '—';
+    document.getElementById('summAbsentRolls').textContent  = absentRolls.length  ? absentRolls.join(', ')  : '—';
+  }
+
+  /* ─── Search ─── */
+  function searchRoll() {
+    const val = document.getElementById('searchInput').value.trim();
+    // Clear previous search matches
+    document.querySelectorAll('.roll-btn.search-match').forEach(b => b.classList.remove('search-match'));
+
+    if (!val) return;
+    
+    const num = parseInt(val);
+    if (isNaN(num)) {
+      // Substring check if user is typing characters
+      rolls.forEach(r => {
+        if (String(r).includes(val)) {
+          const btn = document.getElementById(`r-${r}`);
+          if (btn) btn.classList.add('search-match');
+        }
+      });
+      return;
+    }
+
+    // Exact scroll match & bounce animation
+    const btn = document.getElementById(`r-${num}`);
+    if (btn) {
+      btn.classList.add('search-match');
+      btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      // Try substring match on rolls
+      rolls.forEach(r => {
+        if (String(r).includes(val)) {
+          const btn = document.getElementById(`r-${r}`);
+          if (btn) btn.classList.add('search-match');
+        }
+      });
+    }
+  }
+
+  /* ─── Quick Mark Range Parser ─── */
+  function parseQuickMarkInput(text) {
+    const result = [];
+    if (!text) return result;
+    
+    // Normalize string separators
+    let normalized = text.replace(/;/g, ',').replace(/\s+/g, ' ');
+    normalized = normalized.replace(/\s+to\s+/gi, '-');
+    
+    const parts = normalized.split(/[\s,]+/);
+    
+    parts.forEach(part => {
+      if (!part) return;
+      if (part.includes('-')) {
+        const rangeParts = part.split('-');
+        if (rangeParts.length === 2) {
+          const start = parseInt(rangeParts[0].trim());
+          const end = parseInt(rangeParts[1].trim());
+          if (!isNaN(start) && !isNaN(end)) {
+            const low = Math.min(start, end);
+            const high = Math.max(start, end);
+            for (let i = low; i <= high; i++) {
+              result.push(i);
+            }
+          }
+        }
+      } else {
+        const val = parseInt(part.trim());
+        if (!isNaN(val)) {
+          result.push(val);
+        }
+      }
+    });
+    
+    return result;
+  }
+
+  function quickMark(present) {
+    const input = document.getElementById('quickMarkInput');
+    const list = parseQuickMarkInput(input.value);
+    
+    if (list.length === 0) {
+      toast('⚠️ No valid roll numbers found.');
+      return;
+    }
+    
+    let affectedCount = 0;
+    list.forEach(r => {
+      if (rolls.includes(r)) {
+        if (present) {
+          if (!selected.has(r)) {
+            selected.add(r);
+            affectedCount++;
+          }
+        } else {
+          if (selected.has(r)) {
+            selected.delete(r);
+            affectedCount++;
+          }
+        }
+      }
+    });
+    
+    if (affectedCount > 0) {
+      // Direct DOM update instead of grid rebuild
+      rolls.forEach(r => {
+        const btn = document.getElementById(`r-${r}`);
+        if (btn) {
+          if (selected.has(r)) btn.classList.add('present');
+          else btn.classList.remove('present');
+        }
+      });
+      
+      updateStats();
+      saveSession();
+      input.value = ''; // Reset input field
+      toast(`Marked ${affectedCount} students ${present ? 'Present' : 'Absent'}.`);
+    } else {
+      toast('⚠️ No matching roll numbers in the active grid.');
+    }
+  }
+
+  /* ─── Bulk Operations ─── */
+  function selectAll() {
+    rolls.forEach(r => selected.add(r));
+    
+    // Direct DOM update instead of full renderGrid
+    rolls.forEach(r => {
+      const btn = document.getElementById(`r-${r}`);
+      if (btn) btn.classList.add('present');
+    });
+    
+    updateStats();
+    saveSession();
+    toast('All marked present.');
+  }
+
+  function clearAll() {
+    if (selected.size === 0) {
+      toast('Attendance sheet is already blank.');
+      return;
+    }
+    
+    // Store snapshot for Undo functionality
+    lastSelectedState = new Set(selected);
+    selected.clear();
+    
+    // Direct DOM update
+    rolls.forEach(r => {
+      const btn = document.getElementById(`r-${r}`);
+      if (btn) btn.classList.remove('present');
+    });
+    
+    updateStats();
+    saveSession();
+    showUndoToast('Cleared attendance sheet.');
+  }
+
+  function undoClear() {
+    if (lastSelectedState) {
+      selected = new Set(lastSelectedState);
+      lastSelectedState = null;
+      
+      // Direct DOM update
+      rolls.forEach(r => {
+        const btn = document.getElementById(`r-${r}`);
+        if (btn) {
+          if (selected.has(r)) btn.classList.add('present');
+          else btn.classList.remove('present');
+        }
+      });
+      
+      updateStats();
+      saveSession();
+      
+      const el = document.getElementById('toast');
+      el.classList.remove('show');
+      toast('Restored previous attendance.');
+    }
+  }
+
+  function invertSelection() {
+    rolls.forEach(r => {
+      if (selected.has(r)) {
+        selected.delete(r);
+        const btn = document.getElementById(`r-${r}`);
+        if (btn) btn.classList.remove('present');
+      } else {
+        selected.add(r);
+        const btn = document.getElementById(`r-${r}`);
+        if (btn) btn.classList.add('present');
+      }
+    });
+    
+    updateStats();
+    saveSession();
+    toast('Selection inverted.');
+  }
+
+  /* ─── Export Actions ─── */
+  function exportCSV() {
+    if (!rolls.length) { toast('⚠️ No rolls generated yet.'); return; }
+
+    const presentRolls = rolls.filter(r => selected.has(r));
+    const absentRolls  = rolls.filter(r => !selected.has(r));
+
+    const csv = [
+      `"Present Count","${presentRolls.length}"`,
+      `"Absent Count","${absentRolls.length}"`,
+      `"Total","${rolls.length}"`,
+      `"Present Rolls","${presentRolls.join(',')}"`,
+      `"Absent Rolls","${absentRolls.join(',')}"`,
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('⬇️ CSV exported successfully!');
+  }
+
+  function copySummary() {
+    if (!rolls.length) { toast('⚠️ No rolls generated yet.'); return; }
+
+    const presentRolls = rolls.filter(r => selected.has(r));
+    const absentRolls  = rolls.filter(r => !selected.has(r));
+
+    const text = `📋 Attendance Summary\n`
+      + `──────────────────\n`
+      + `✅ Present : ${presentRolls.length}\n`
+      + `❌ Absent  : ${absentRolls.length}\n`
+      + `📊 Total   : ${rolls.length}\n\n`
+      + `Present Rolls:\n${presentRolls.join(', ') || '—'}\n\n`
+      + `Absent Rolls:\n${absentRolls.join(', ') || '—'}`;
+
+    navigator.clipboard.writeText(text).then(() => toast('📋 Summary copied to clipboard!'));
+  }
+
+  /* ─── Session Setup & Persistence ─── */
+  function saveSession() {
+    localStorage.setItem('attendance_start', document.getElementById('startRoll').value);
+    localStorage.setItem('attendance_end', document.getElementById('endRoll').value);
+    localStorage.setItem('attendance_rolls', JSON.stringify(rolls));
+    localStorage.setItem('attendance_selected', JSON.stringify(Array.from(selected)));
+  }
+
+  function loadSession() {
+    // Restore theme preference
+    const savedDark = localStorage.getItem('attendance_dark');
+    if (savedDark !== null) {
+      dark = savedDark === 'true';
+      html.setAttribute('data-theme', dark ? 'dark' : '');
+      themeBtn.textContent = dark ? '☀️ Light' : '🌙 Dark';
+    }
+
+    // Restore ranges and generated sheets
+    const savedStart = localStorage.getItem('attendance_start');
+    const savedEnd = localStorage.getItem('attendance_end');
+    if (savedStart) document.getElementById('startRoll').value = savedStart;
+    if (savedEnd) document.getElementById('endRoll').value = savedEnd;
+
+    const savedRolls = localStorage.getItem('attendance_rolls');
+    const savedSelected = localStorage.getItem('attendance_selected');
+
+    if (savedRolls) {
+      rolls = JSON.parse(savedRolls);
+      if (savedSelected) {
+        selected = new Set(JSON.parse(savedSelected));
+      } else {
+        selected = new Set();
+      }
+
+      renderGrid();
+      updateStats();
+      showPanels();
+      document.getElementById('grid-meta').textContent = `(${rolls[0]} – ${rolls[rolls.length - 1]})`;
+      document.getElementById('empty-state').style.display = 'none';
+    }
+  }
+
+  function resetSession() {
+    showConfirmModal(() => {
+      localStorage.removeItem('attendance_start');
+      localStorage.removeItem('attendance_end');
+      localStorage.removeItem('attendance_rolls');
+      localStorage.removeItem('attendance_selected');
+      
+      rolls = [];
+      selected.clear();
+      lastSelectedState = null;
+
+      document.getElementById('startRoll').value = 1;
+      document.getElementById('endRoll').value = 70;
+      document.getElementById('searchInput').value = '';
+      document.getElementById('quickMarkInput').value = '';
+
+      hidePanels();
+      document.getElementById('empty-state').style.display = 'flex';
+      toast('Session reset successfully.');
+    });
+  }
+
+  /* ─── Show/Hide Panels ─── */
+  function showPanels() {
+    ['search-card', 'stats-card', 'quickmark-card', 'actions-card', 'summary-card', 'grid-card']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.style.display = '';
+          el.classList.add('fade-in');
+        }
+      });
+  }
+
+  function hidePanels() {
+    ['search-card', 'stats-card', 'quickmark-card', 'actions-card', 'summary-card', 'grid-card']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+  }
+
+  /* ─── Toast System ─── */
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  function showUndoToast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.innerHTML = `${msg} <button class="toast-undo-btn" onclick="undoClear()">Undo</button>`;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.classList.remove('show');
+      lastSelectedState = null;
+    }, 6000); // 6 seconds undo window
+  }
+
+  /* ─── Keyboard Shortcuts ─── */
+  document.addEventListener('keydown', e => {
+    if (!rolls.length) return;
+
+    // Ignore shortcuts when user is focused inside input/textarea elements
+    const activeEl = document.activeElement;
+    const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+    if (isInput) {
+      // Allow Esc to clear and blur search input
+      if (e.key === 'Escape' && activeEl.id === 'searchInput') {
+        activeEl.value = '';
+        searchRoll();
+        activeEl.blur();
+      }
+      return;
+    }
+
+    if (e.ctrlKey && e.key === 'a') {
+      e.preventDefault();
+      selectAll();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      clearAll();
+    }
+  });
+
+  // Load saved session on DOM load
+  window.addEventListener('DOMContentLoaded', loadSession);
+</script>
+</body>
+</html>
